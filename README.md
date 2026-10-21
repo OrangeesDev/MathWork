@@ -1,2 +1,2 @@
 # SchoolGames
-Hey guys this is named MathWork because schools are starting to block the word games so yea this is just a bunch of games i have go to
+Hey guys this is named MathWork because schools are starting to block the word games so yea this is just a bunch of games i have go to https://cdn.jsdelivr.net/gh/OrangeesDev/MathWork@main/AllHomeworkSites.svg for the auto updater and for the sitelinks!!! This is for fun please if you want make you own the update checker is vibe coded but its because i need to make more games fo this ok bye!!!
