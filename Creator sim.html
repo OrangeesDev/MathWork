@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Sim</title>
+    <!-- Abstract gradient favicon – no symbols, no emojis -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23a855f7'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23grad)'/%3E%3C/svg%3E">
+    <style>
+        :root {
+            --bg: #0f0a1a;
+            --surface: #1a1028;
+            --surface2: #241836;
+            --accent: #a855f7;
+            --accent2: #6366f1;
+            --gold: #f59e0b;
+            --green: #10b981;
+            --red: #ef4444;
+            --text: #e2dff0;
+            --text2: #b0a8c8;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        canvas#particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .screen.active {
+            display: flex;
+        }
+        #creation-screen {
+            gap: 20px;
+        }
+        #creation-screen h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            background: linear-gradient(135deg, var(--accent), #c084fc, var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text2);
+            font-size: 1.1rem;
+            text-align: center;
+            max-width: 500px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            transition: var(--transition);
+        }
+        .card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.15);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(168, 85, 247, 0.5);
+        }
+        .btn-primary:active {
+            transform: scale(0.96);
+        }
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-secondary:hover {
+            background: #2d1f44;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.82rem;
+            border-radius: 30px;
+        }
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            font-weight: 800;
+        }
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .genre-btn {
+            padding: 14px 10px;
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            border: 2px solid transparent;
+            color: var(--text);
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .genre-btn:hover {
+            border-color: var(--accent);
+            background: #2d1f44;
+        }
+        .genre-btn.selected {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.2);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+        }
+        #game-screen {
+            display: none;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 1fr;
+            gap: 16px;
+            min-height: 100vh;
+            padding: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        #game-screen.active {
+            display: grid;
+        }
+        @media (max-width: 1100px) {
+            #game-screen {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 12px;
+                padding: 10px;
+            }
+            #game-screen .side-panel {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                max-height: none;
+            }
+            #game-screen .side-panel>* {
+                flex: 1 1 140px;
+                min-width: 120px;
+            }
+        }
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100vh - 32px);
+            padding-right: 4px;
+        }
+        .side-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        .side-panel::-webkit-scrollbar-thumb {
+            background: var(--surface2);
+            border-radius: 4px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+        }
+        .stat-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text2);
+            margin-bottom: 4px;
+        }
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-card .value.small-val {
+            font-size: 1.1rem;
+        }
+        .progress-bar-wrap {
+            background: var(--surface2);
+            border-radius: 20px;
+            height: 8px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+        }
+        .room-container {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .room-scene {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            position: relative;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .room-element {
+            position: absolute;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+        }
+        .room-floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to top, rgba(30, 20, 50, 0.9), rgba(30, 20, 50, 0.3));
+            border-radius: 0;
+        }
+        .room-wall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 30%;
+            background: linear-gradient(180deg, #1a1030 0%, #1e1435 50%, #221838 100%);
+            border-radius: 0;
+        }
+        .room-desk {
+            position: absolute;
+            bottom: 22%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 8%;
+            background: linear-gradient(180deg, #5c3d2e, #3d2217);
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .room-monitor {
+            position: absolute;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 22%;
+            height: 20%;
+            background: linear-gradient(180deg, #2a2a3a, #1a1a28);
+            border-radius: 8px 8px 4px 4px;
+            border: 3px solid #333;
+            box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+        }
+        .room-monitor::after {
+            content: '';
+            position: absolute;
+            inset: 8%;
+            background: linear-gradient(135deg, #1a1a3a, #0a0a20);
+            border-radius: 3px;
+        }
+        .room-poster {
+            position: absolute;
+            top: 15%;
+            right: 12%;
+            width: 12%;
+            height: 20%;
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            border-radius: 3px;
+            border: 2px solid #444;
+            opacity: 0.6;
+        }
+        .room-bed {
+            position: absolute;
+            bottom: 22%;
+            left: 5%;
+            width: 20%;
+            height: 10%;
+            background: linear-gradient(180deg, #4a5568, #2d3748);
+            border-radius: 10px 10px 4px 4px;
+        }
+        .room-award {
+            position: absolute;
+            top: 10%;
+            right: 20%;
+            width: 20px;
+            height: 28px;
+            background: linear-gradient(180deg, #ffd700, #b8860b);
+            border-radius: 3px 3px 50% 50%;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: var(--surface2);
+            color: var(--text2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge.gold-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--gold);
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal h2 {
+            margin-bottom: 16px;
+            font-size: 1.4rem;
+            letter-spacing: -0.5px;
+        }
+        .modal .form-group {
+            margin-bottom: 14px;
+        }
+        .modal label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text2);
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        .modal select,
+        .modal input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .modal select:focus,
+        .modal input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+        }
+        .comment-item {
+            padding: 8px 12px;
+            background: var(--surface2);
+            border-radius: 20px;
+            margin: 4px 0;
+            font-size: 0.82rem;
+            animation: fadeIn 0.4s ease;
+            border-left: 3px solid var(--accent);
+        }
+        .comment-item.troll {
+            border-left-color: var(--red);
+            opacity: 0.7;
+        }
+        .comment-item.positive {
+            border-left-color: var(--green);
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            padding: 14px 22px;
+            border-radius: 50px;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1), toastOut 0.4s 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+        @keyframes toastIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes toastOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+        }
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.06);
+            }
+        }
+        .shake {
+            animation: shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-8px);
+            }
+            75% {
+                transform: translateX(8px);
+            }
+        }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+        .sponsor-card {
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin: 8px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sponsor-tier-bronze {
+            border-left: 3px solid #cd7f32;
+        }
+        .sponsor-tier-silver {
+            border-left: 3px solid #c0c0c0;
+        }
+        .sponsor-tier-gold {
+            border-left: 3px solid #ffd700;
+        }
+        .sponsor-tier-diamond {
+            border-left: 3px solid #b9f2ff;
+        }
+        .leaderboard-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin: 4px 0;
+            transition: var(--transition);
+        }
+        .leaderboard-row.player-row {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            font-weight: 700;
+        }
+        .leaderboard-rank {
+            font-weight: 900;
+            font-size: 1.2rem;
+            width: 35px;
+            text-align: center;
+            color: var(--text2);
+        }
+        .leaderboard-rank.top3 {
+            color: var(--gold);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+
+    <!-- Channel Creation Screen -->
+    <div id="creation-screen" class="screen active">
+        <h1>Creator Sim</h1>
+        <p class="subtitle">Start from nothing. Build your empire. One upload at a time.</p>
+        <div class="card" style="max-width:650px;width:100%;">
+            <h3 style="margin-bottom:12px;text-align:center;">Choose Your Niche</h3>
+            <div class="genre-grid" id="genre-grid"></div>
+            <div style="margin-top:16px;text-align:center;">
+                <label style="display:block;margin-bottom:6px;color:var(--text2);font-size:0.85rem;">Channel Name</label>
+                <input type="text" id="channel-name-input" placeholder="Enter channel name..." maxlength="30" style="width:100%;max-width:350px;padding:10px 16px;border-radius:50px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-family:inherit;font-size:1rem;text-align:center;">
+            </div>
+            <div style="text-align:center;margin-top:18px;">
+                <button class="btn btn-primary" id="start-btn" style="font-size:1.1rem;padding:14px 40px;">Start Creating 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+        <!-- Left Panel - Stats -->
+        <div class="side-panel" id="left-panel">
+            <div class="stat-card">
+                <div class="label">📊 Subscribers</div>
+                <div class="value" id="stat-subs">0</div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" id="subs-progress" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="label">👁️ Total Views</div>
+                <div class="value small-val" id="stat-views">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">💰 Money</div>
+                <div class="value small-val" id="stat-money">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">⭐ Algorithm Score</div>
+                <div class="value small-val" id="stat-algo">0</div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" id="algo-progress" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="label">😊 Audience Happiness</div>
+                <div class="value small-val" id="stat-happiness">50%</div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" id="happiness-bar" style="width:50%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="upload-btn" style="width:100%;">📤 Upload Video</button>
+            <button class="btn btn-secondary btn-sm" id="shop-btn" style="width:100%;">🛒 Equipment Shop</button>
+            <button class="btn btn-secondary btn-sm" id="sponsors-btn" style="width:100%;">🤝 Sponsors</button>
+            <button class="btn btn-secondary btn-sm" id="stream-btn" style="width:100%;">🔴 Go Live</button>
+            <button class="btn btn-secondary btn-sm" id="leaderboard-btn" style="width:100%;">🏆 Leaderboard</button>
+            <button class="btn btn-secondary btn-sm" id="save-btn" style="width:100%;">💾 Save Game</button>
+            <button class="btn btn-sm" id="reset-btn" style="width:100%;background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--text2);">🔄 Reset</button>
+        </div>
+
+        <!-- Center - Room -->
+        <div class="room-container" id="room-container">
+            <div class="room-scene" id="room-scene">
+                <div class="room-wall"></div>
+                <div class="room-floor"></div>
+                <div class="room-bed" id="room-bed"></div>
+                <div class="room-desk" id="room-desk"></div>
+                <div class="room-monitor" id="room-monitor"></div>
+                <div class="room-poster" id="room-poster"></div>
+                <div id="room-extras"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Recent Activity -->
+        <div class="side-panel" id="right-panel">
+            <div class="stat-card">
+                <div class="label">🎬 Last Video</div>
+                <div id="last-video-info" style="font-size:0.8rem;color:var(--text2);">No videos yet</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">💬 Recent Comments</div>
+                <div id="comments-display" style="max-height:200px;overflow-y:auto;font-size:0.8rem;"></div>
+            </div>
+            <div class="stat-card">
+                <div class="label">🏅 Awards</div>
+                <div class="badge-row" id="awards-display"></div>
+            </div>
+            <div class="stat-card">
+                <div class="label">📈 Milestones</div>
+                <div id="milestones-display" style="font-size:0.75rem;color:var(--text2);max-height:120px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== GAME STATE ====================
+            const defaultState = () => ({
+                channelName: '',
+                niche: '',
+                subscribers: 0,
+                totalViews: 0,
+                money: 0,
+                watchTime: 0,
+                likes: 0,
+                dislikes: 0,
+                algorithmScore: 25,
+                audienceHappiness: 50,
+                uploadConsistency: 0,
+                sponsorReputation: 0,
+                uploadCount: 0,
+                lastUploadDay: -1,
+                currentDay: 0,
+                equipment: {
+                    microphone: 'bad',
+                    camera: 'none',
+                    lighting: 'none',
+                    pc: 'old_laptop',
+                    editingSoftware: 'basic',
+                    editor: 'none',
+                    thumbnailDesigner: 'none',
+                    studio: 'bedroom',
+                    greenScreen: false,
+                    internet: 'slow',
+                    secondMonitor: false,
+                    soundPanels: false,
+                    streamingSetup: false,
+                    office: 'none',
+                    warehouseStudio: false,
+                },
+                equipmentLevel: 0,
+                roomLevel: 0,
+                awards: [],
+                milestonesReached: [],
+                sponsorships: [],
+                activeSponsor: null,
+                viralEventCooldown: 0,
+                lastCommentSet: [],
+                commentIndexOffset: 0,
+            });
+
+            let state = defaultState();
+
+            // ==================== GENRES ====================
+            const genres = [
+                'Gaming', 'Technology', 'Movies', 'Music', 'Comedy', 'Education', 'Animation',
+                'Science', 'Lifestyle', 'Cooking', 'Sports', 'Reviews', 'Horror', 'Storytelling',
+                'News', 'Art', 'Programming', 'Travel', 'Cars', 'Memes'
+            ];
+
+            const nicheTopics = {
+                'Gaming': ['Minecraft', 'Roblox', 'Fortnite', 'Racing', 'Simulation', 'RPG Review', 'Speedrun',
+                    'E-Sports', 'Indie Games', 'Retro Gaming'
+                ],
+                'Technology': ['New Smartphone', 'Laptop Review', 'AI Tools', 'Coding Tips', 'Gadget Unboxing',
+                    'Tech News', 'Build a PC', 'Software Review', 'Wearables', 'Future Tech'
+                ],
+                'Movies': ['Movie Review', 'Top 10 Films', 'Behind the Scenes', 'Cinematography', 'Classic Films',
+                    'New Releases', 'Director Analysis', 'Movie Theories', 'Hidden Gems', 'Award Season'
+                ],
+                'Music': ['Album Review', 'Guitar Tutorial', 'Music Production', 'Artist Spotlight', 'Live Performance',
+                    'Genre Deep Dive', 'Vinyl Collection', 'Song Breakdown', 'Music History', 'Festival Vlog'
+                ],
+                'Comedy': ['Sketch', 'Stand-up Clip', 'Funny Observations', 'Parody', 'Reaction Video',
+                    'Comedic Commentary', 'Bloopers', 'Impressions', 'Satire', 'Funny Stories'
+                ],
+                'Education': ['Math Explained', 'History Lesson', 'Science Facts', 'Language Learning', 'Study Tips',
+                    'Book Summary', 'Philosophy 101', 'Geography Quiz', 'Economics Basics', 'Critical Thinking'
+                ],
+                'Animation': ['Animation Process', 'Character Design', 'Short Film', 'Animation Software',
+                    'Storyboarding', '3D Modeling', 'Stop Motion', 'Motion Graphics', 'Animator Vlog',
+                    'Behind the Animation'
+                ],
+                'Science': ['Space Exploration', 'Biology Facts', 'Chemistry Experiment', 'Physics Explained',
+                    'Climate Science', 'Neuroscience', 'Genetics', 'Quantum Physics', 'Paleontology', 'Marine Biology'
+                ],
+                'Lifestyle': ['Morning Routine', 'Room Makeover', 'Productivity Hacks', 'Minimalism', 'Self Care',
+                    'Fashion Haul', 'Home Decor', 'Journaling', 'Wellness Tips', 'Daily Vlog'
+                ],
+                'Cooking': ['Pasta Recipe', 'Baking Tutorial', 'Street Food Review', 'Meal Prep', 'Dessert Challenge',
+                    'Budget Meals', 'International Cuisine', 'Kitchen Gadgets', 'BBQ Tips', 'Vegan Recipes'
+                ],
+                'Sports': ['Match Analysis', 'Training Routine', 'Sports News', 'Highlights', 'Fantasy Picks',
+                    'Athlete Profile', 'Fitness Challenge', 'Game Predictions', 'Sports History', 'Equipment Review'
+                ],
+                'Reviews': ['Product Review', 'Service Comparison', 'Honest Review', 'Unboxing', 'Long-term Review',
+                    'Budget vs Premium', 'Worth It?', 'Buyer Guide', 'Top Picks', 'Avoid This'
+                ],
+                'Horror': ['Scary Story', 'Paranormal Investigation', 'Horror Game Playthrough', 'Creepy Facts',
+                    'Haunted Location', 'Horror Movie Analysis', 'Urban Legend', 'Spooky Vlog', 'True Crime',
+                    'Nightmare Fuel'
+                ],
+                'Storytelling': ['Original Story', 'Fiction Reading', 'Personal Story', 'Myth Retelling',
+                    'Interactive Story', 'Mystery Tale', 'Fantasy Worldbuilding', 'Writing Tips', 'Audio Drama',
+                    'Storytime'
+                ],
+                'News': ['Breaking News', 'Weekly Recap', 'Deep Dive Analysis', 'Interview', 'Fact Check',
+                    'Political Commentary', 'Tech News', 'Global Events', 'Media Review', 'Investigative Report'
+                ],
+                'Art': ['Painting Tutorial', 'Digital Art Process', 'Art Supply Review', 'Sketchbook Tour',
+                    'Art History', 'Commission Work', 'Plein Air Painting', 'Sculpture', 'Art Challenges',
+                    'Gallery Visit'
+                ],
+                'Programming': ['Code Tutorial', 'Project Walkthrough', 'Debugging Tips', 'Framework Review',
+                    'Career Advice', 'Open Source', 'Hackathon Vlog', 'System Design', 'Learning Path', 'Code Review'
+                ],
+                'Travel': ['City Guide', 'Travel Vlog', 'Budget Travel', 'Hidden Gems', 'Cultural Experience',
+                    'Packing Tips', 'Food Tour', 'Solo Travel', 'Adventure Trip', 'Travel Hacks'
+                ],
+                'Cars': ['Car Review', 'Test Drive', 'Car Maintenance', 'Auto Show', 'Build Project', 'EV News',
+                    'Classic Cars', 'Racing Event', 'Car Tech', 'Buying Guide'
+                ],
+                'Memes': ['Meme Review', 'Meme Creation', 'Trending Memes', 'Meme History', 'Reaction Memes',
+                    'Dank Memes', 'Meme Compilation', 'Viral Trends', 'Meme Analysis', 'Meme Battle'
+                ],
+            };
+
+            const offNicheTopics = ['History of Rome', 'Ancient Philosophy', 'Bird Watching', 'Knitting 101',
+                'Stamp Collecting', 'Chess Openings', 'Poetry Reading', 'Gardening Tips', 'Yoga for Seniors',
+                'Aquarium Care'
+            ];
+
+            // ==================== COMMENTS POOL (100+) ====================
+            const commentPool = [
+                { text: "This deserves way more views.", type: 'positive' },
+                { text: "First!", type: 'neutral' },
+                { text: "I've been waiting for this.", type: 'positive' },
+                { text: "Underrated.", type: 'positive' },
+                { text: "Instant subscribe.", type: 'positive' },
+                { text: "W editing.", type: 'positive' },
+                { text: "The intro is fire.", type: 'positive' },
+                { text: "How are you not famous?", type: 'positive' },
+                { text: "Algorithm hates this guy.", type: 'neutral' },
+                { text: "This made my day.", type: 'positive' },
+                { text: "Please upload more.", type: 'positive' },
+                { text: "Best video this week.", type: 'positive' },
+                { text: "I learned something today.", type: 'positive' },
+                { text: "Can we appreciate the editing?", type: 'positive' },
+                { text: "I laughed way too hard.", type: 'positive' },
+                { text: "Who else is watching in 2026?", type: 'neutral' },
+                { text: "I've watched this three times.", type: 'positive' },
+                { text: "Bro never disappoints.", type: 'positive' },
+                { text: "This channel is underrated.", type: 'positive' },
+                { text: "W creator.", type: 'positive' },
+                { text: "Keep going.", type: 'positive' },
+                { text: "Actually really helpful.", type: 'positive' },
+                { text: "My new favorite channel.", type: 'positive' },
+                { text: "The quality is insane.", type: 'positive' },
+                { text: "Not bad, keep improving.", type: 'neutral' },
+                { text: "Mid.", type: 'troll' },
+                { text: "Seen better.", type: 'troll' },
+                { text: "Why is this in my feed?", type: 'troll' },
+                { text: "Copying other creators.", type: 'troll' },
+                { text: "Needs better audio.", type: 'critical' },
+                { text: "The thumbnail is misleading.", type: 'critical' },
+                { text: "Good effort but room to grow.", type: 'critical' },
+                { text: "Love the energy!", type: 'positive' },
+                { text: "Subbed after 10 seconds.", type: 'positive' },
+                { text: "This channel will blow up.", type: 'positive' },
+                { text: "Never stop creating.", type: 'positive' },
+                { text: "You're getting better every video.", type: 'positive' },
+                { text: "The production value is climbing.", type: 'positive' },
+                { text: "Clicked for the thumbnail, stayed for the content.", type: 'positive' },
+                { text: "Algorithm finally recommended something good.", type: 'positive' },
+                { text: "Big fan from the start.", type: 'positive' },
+                { text: "Solid content as always.", type: 'positive' },
+                { text: "This is exactly what I needed.", type: 'positive' },
+                { text: "Sharing this with everyone.", type: 'positive' },
+                { text: "Criminally underrated.", type: 'positive' },
+                { text: "How does this only have [views] views?", type: 'positive' },
+                { text: "Respect the grind.", type: 'positive' },
+                { text: "Every upload is a treat.", type: 'positive' },
+                { text: "Deserves a million subs.", type: 'positive' },
+                { text: "The pacing is perfect.", type: 'positive' },
+                { text: "Actually entertaining.", type: 'positive' },
+                { text: "Commenting for the algorithm.", type: 'neutral' },
+                { text: "Here before this blows up.", type: 'positive' },
+                { text: "Late to the party but loving it.", type: 'positive' },
+                { text: "Rewatching this masterpiece.", type: 'positive' },
+                { text: "Can't stop watching your content.", type: 'positive' },
+                { text: "Binge-worthy.", type: 'positive' },
+                { text: "You inspired me to start creating.", type: 'positive' },
+                { text: "Best decision was subscribing.", type: 'positive' },
+                { text: "Not my usual niche but I'm hooked.", type: 'positive' },
+                { text: "The dedication shows.", type: 'positive' },
+                { text: "Keep experimenting, it works.", type: 'positive' },
+                { text: "Another banger.", type: 'positive' },
+                { text: "Petition for daily uploads.", type: 'positive' },
+                { text: "The internet needs more of this.", type: 'positive' },
+                { text: "Bookmarked for later.", type: 'neutral' },
+                { text: "Interesting take.", type: 'neutral' },
+                { text: "Hmm, not sure about this one.", type: 'critical' },
+                { text: "Audio could use work.", type: 'critical' },
+                { text: "Try adding background music.", type: 'critical' },
+                { text: "Good concept, weak execution.", type: 'critical' },
+                { text: "Your old content was better.", type: 'troll' },
+                { text: "Boring.", type: 'troll' },
+                { text: "Skip.", type: 'troll' },
+                { text: "Too long.", type: 'troll' },
+                { text: "Get to the point.", type: 'troll' },
+                { text: "Clickbait.", type: 'troll' },
+                { text: "Unsubscribed.", type: 'troll' },
+                { text: "Waste of time.", type: 'troll' },
+                { text: "LOL this is gold.", type: 'positive' },
+                { text: "I'm crying 😂", type: 'positive' },
+                { text: "Peak content.", type: 'positive' },
+                { text: "No one does it like you.", type: 'positive' },
+                { text: "This community is amazing.", type: 'positive' },
+                { text: "You've grown so much.", type: 'positive' },
+                { text: "Remember when you had 100 subs?", type: 'positive' },
+                { text: "OG subscriber here.", type: 'positive' },
+                { text: "Proud of how far you've come.", type: 'positive' },
+                { text: "The storytelling is top-tier.", type: 'positive' },
+                { text: "Educational and fun.", type: 'positive' },
+                { text: "You make learning enjoyable.", type: 'positive' },
+                { text: "New ringtone material.", type: 'positive' },
+                { text: "Can we get a part 2?", type: 'positive' },
+                { text: "That transition was smooth.", type: 'positive' },
+                { text: "I showed this to my whole family.", type: 'positive' },
+                { text: "Worth the wait.", type: 'positive' },
+                { text: "The dedication is unreal.", type: 'positive' },
+                { text: "A true creator.", type: 'positive' },
+                { text: "This is art.", type: 'positive' },
+                { text: "More people need to see this.", type: 'positive' },
+                { text: "I'm sharing this everywhere.", type: 'positive' },
+                { text: "Top-tier content right here.", type: 'positive' },
+            ];
+
+            // ==================== SOUND ENGINE ====================
+            let audioCtx = null;
+
+            function initAudio() {
+                if (!audioCtx) {
+                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+
+            function playTone(freq, duration, type = 'sine', vol = 0.08) {
+                if (!audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + duration);
+                } catch (e) { /* silent */ }
+            }
+
+            function sfxClick() { playTone(800, 0.08, 'sine', 0.04);
+                playTone(1000, 0.06, 'sine', 0.03); }
+
+            function sfxSuccess() { playTone(523, 0.15, 'sine', 0.07);
+                playTone(659, 0.15, 'sine', 0.07);
+                playTone(784, 0.2, 'sine', 0.08); }
+
+            function sfxMilestone() {
+                playTone(523, 0.2, 'triangle', 0.1);
+                setTimeout(() => playTone(659, 0.2, 'triangle', 0.1), 150);
+                setTimeout(() => playTone(784, 0.25, 'triangle', 0.12), 300);
+                setTimeout(() => playTone(1047, 0.35, 'triangle', 0.14), 450);
+            }
+
+            function sfxFail() { playTone(200, 0.3, 'sawtooth', 0.04);
+                playTone(150, 0.35, 'sawtooth', 0.03); }
+
+            function sfxCash() { playTone(1200, 0.1, 'sine', 0.06);
+                playTone(1600, 0.08, 'sine', 0.05); }
+
+            // ==================== PARTICLES ====================
+            const canvas = document.getElementById('particles');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function spawnParticles(x, y, count, color) {
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x,
+                        y,
+                        vx: (Math.random() - 0.5) * 8,
+                        vy: (Math.random() - 0.5) * 8 - 4,
+                        life: 1,
+                        decay: 0.015 + Math.random() * 0.04,
+                        size: 3 + Math.random() * 8,
+                        color,
+                    });
+                }
+            }
+
+            function spawnConfetti(count = 80) {
+                const colors = ['#a855f7', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#ec4899', '#06b6d4',
+                '#f97316'];
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: -30 - Math.random() * 100,
+                        vx: (Math.random() - 0.5) * 6,
+                        vy: 3 + Math.random() * 7,
+                        life: 1,
+                        decay: 0.006 + Math.random() * 0.015,
+                        size: 4 + Math.random() * 10,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.3,
+                    });
+                }
+            }
+
+            function updateParticles() {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.15;
+                    p.life -= p.decay;
+                    if (p.rot !== undefined) p.rot += (p.rotSpeed || 0);
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+            }
+
+            function drawParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (const p of particles) {
+                    ctx.save();
+                    ctx.globalAlpha = p.life;
+                    if (p.rot !== undefined) {
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.rot);
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    } else {
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            function particleLoop() {
+                updateParticles();
+                drawParticles();
+                requestAnimationFrame(particleLoop);
+            }
+            particleLoop();
+
+            // ==================== UI HELPERS ====================
+            function $(id) { return document.getElementById(id); }
+
+            function showToast(msg, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = msg;
+                if (type === 'success') toast.style.borderColor = 'var(--green)';
+                if (type === 'error') toast.style.borderColor = 'var(--red)';
+                if (type === 'gold') { toast.style.borderColor = 'var(--gold)';
+                    toast.style.background = '#1a1200'; }
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+
+            function formatNumber(n) {
+                if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                return Math.floor(n).toString();
+            }
+
+            function formatMoney(n) {
+                if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+                if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+                return '$' + Math.floor(n);
+            }
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            // ==================== ROOM RENDERING ====================
+            function updateRoom() {
+                const scene = $('room-scene');
+                const extras = $('room-extras');
+                const level = state.roomLevel;
+                const eq = state.equipment;
+
+                // Clear extras
+                extras.innerHTML = '';
+
+                // Room wall color based on level
+                const wallColors = [
+                    '#1a1030', // bedroom
+                    '#1a1035', // gaming room
+                    '#1c1238', // office
+                    '#1e1440', // studio
+                    '#201648', // mansion
+                    '#221850', // HQ
+                ];
+                const wallEl = scene.querySelector('.room-wall');
+                if (wallEl) wallEl.style.background = `linear-gradient(180deg, ${wallColors[Math.min(level,5)]} 0%, ${wallColors[Math.min(level,5)]} 50%, #1e1435 100%)`;
+
+                // Bed visibility
+                const bed = $('room-bed');
+                bed.style.display = level < 2 ? 'block' : 'none';
+
+                // Monitor upgrade
+                const monitor = $('room-monitor');
+                if (eq.pc === 'old_laptop') {
+                    monitor.style.width = '22%';
+                    monitor.style.height = '18%';
+                    monitor.style.bottom = '30%';
+                    monitor.style.boxShadow = '0 0 10px rgba(100,100,255,0.2)';
+                } else if (eq.pc === 'gaming_pc') {
+                    monitor.style.width = '28%';
+                    monitor.style.height = '22%';
+                    monitor.style.bottom = '30%';
+                    monitor.style.boxShadow = '0 0 30px rgba(168,85,247,0.5)';
+                } else if (eq.pc === 'pro_pc') {
+                    monitor.style.width = '32%';
+                    monitor.style.height = '24%';
+                    monitor.style.bottom = '30%';
+                    monitor.style.boxShadow = '0 0 40px rgba(100,200,255,0.6)';
+                }
+                if (eq.secondMonitor) {
+                    const mon2 = document.createElement('div');
+                    mon2.className = 'room-element';
+                    mon2.style.cssText = `
+                position:absolute; bottom:30%; left:22%; width:18%; height:16%;
+                background:linear-gradient(180deg,#2a2a3a,#1a1a28); border-radius:6px 6px 3px 3px;
+                border:2px solid #333; box-shadow:0 0 15px rgba(100,100,255,0.3);
+              `;
+                    extras.appendChild(mon2);
+                }
+
+                // Desk upgrade
+                const desk = $('room-desk');
+                if (level >= 2) desk.style.width = '60%';
+                if (level >= 3) desk.style.width = '65%';
+                if (level >= 4) desk.style.width = '70%';
+
+                // Green screen
+                if (eq.greenScreen) {
+                    const gs = document.createElement('div');
+                    gs.className = 'room-element';
+                    gs.style.cssText = `
+                position:absolute; top:8%; right:8%; width:25%; height:55%;
+                background:linear-gradient(180deg,#10b981,#059669); border-radius:4px;
+                opacity:0.5; box-shadow:0 0 25px rgba(16,185,129,0.3);
+              `;
+                    extras.appendChild(gs);
+                }
+
+                // Sound panels
+                if (eq.soundPanels) {
+                    for (let i = 0; i < 4; i++) {
+                        const sp = document.createElement('div');
+                        sp.className = 'room-element';
+                        sp.style.cssText = `
+                  position:absolute; top:${12+i*12}%; left:5%; width:6%; height:8%;
+                  background:#3a3050; border-radius:4px; border:1px solid #4a4060;
+                `;
+                        extras.appendChild(sp);
+                    }
+                }
+
+                // Studio lighting
+                if (eq.lighting === 'pro') {
+                    const light = document.createElement('div');
+                    light.className = 'room-element';
+                    light.style.cssText = `
+                position:absolute; top:3%; left:40%; width:20%; height:5%;
+                background:linear-gradient(180deg,#fff8e0,#ffe0a0); border-radius:50%;
+                opacity:0.7; box-shadow:0 0 60px rgba(255,240,200,0.5);
+              `;
+                    extras.appendChild(light);
+                }
+
+                // Awards on wall
+                if (state.awards.length > 0) {
+                    state.awards.forEach((award, i) => {
+                        const aw = document.createElement('div');
+                        aw.className = 'room-award room-element';
+                        aw.style.cssText = `
+                  position:absolute; top:${8+Math.floor(i/3)*10}%; right:${15+(i%3)*8}%;
+                  width:16px; height:24px; background:linear-gradient(180deg,#ffd700,#b8860b);
+                  border-radius:3px 3px 50% 50%; box-shadow:0 0 12px rgba(255,215,0,0.5);
+                `;
+                        extras.appendChild(aw);
+                    });
+                }
+
+                // Warehouse studio
+                if (eq.warehouseStudio) {
+                    extras.innerHTML += `
+                <div style="position:absolute;top:5%;left:10%;color:#ffd700;font-size:2rem;opacity:0.7;text-shadow:0 0 20px rgba(255,215,0,0.6);">🏭</div>
+                <div style="position:absolute;bottom:10%;right:10%;color:#fff;font-size:1.5rem;opacity:0.5;">Professional HQ</div>
+              `;
+                }
+
+                // Poster changes
+                const poster = $('room-poster');
+                if (level >= 3) poster.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+                if (level >= 4) poster.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+            }
+
+            // ==================== STATS UPDATE ====================
+            function updateStatsDisplay() {
+                $('stat-subs').textContent = formatNumber(state.subscribers);
+                $('stat-views').textContent = formatNumber(state.totalViews);
+                $('stat-money').textContent = formatMoney(state.money);
+                $('stat-algo').textContent = Math.floor(state.algorithmScore);
+                $('stat-happiness').textContent = Math.floor(state.audienceHappiness) + '%';
+
+                // Progress bars
+                const subsMilestone = getNextSubMilestone();
+                const subsProgress = subsMilestone > 0 ? (state.subscribers / subsMilestone) * 100 : 100;
+                $('subs-progress').style.width = Math.min(subsProgress, 100) + '%';
+                $('algo-progress').style.width = Math.min(state.algorithmScore, 100) + '%';
+                $('happiness-bar').style.width = Math.min(state.audienceHappiness, 100) + '%';
+                if (state.audienceHappiness < 30) {
+                    $('happiness-bar').style.background = 'linear-gradient(90deg,#ef4444,#f87171)';
+                } else if (state.audienceHappiness < 60) {
+                    $('happiness-bar').style.background = 'linear-gradient(90deg,#f59e0b,#fbbf24)';
+                } else {
+                    $('happiness-bar').style.background = 'linear-gradient(90deg,#10b981,#34d399)';
+                }
+            }
+
+            function getNextSubMilestone() {
+                const milestones = [100, 1000, 10000, 100000, 1000000, 10000000, 50000000, 100000000];
+                for (const m of milestones) {
+                    if (state.subscribers < m) return m;
+                }
+                return 100000000;
+            }
+
+            function updateAwardsDisplay() {
+                const container = $('awards-display');
+                if (state.awards.length === 0) {
+                    container.innerHTML =
+                        '<span style="font-size:0.7rem;color:var(--text2);">No awards yet</span>';
+                } else {
+                    container.innerHTML = state.awards.map(a =>
+                        `<span class="badge gold-badge">${a}</span>`
+                    ).join('');
+                }
+            }
+
+            function updateMilestonesDisplay() {
+                const container = $('milestones-display');
+                if (state.milestonesReached.length === 0) {
+                    container.innerHTML = '<span style="color:var(--text2);">Keep creating!</span>';
+                } else {
+                    container.innerHTML = state.milestonesReached.slice(-5).map(m =>
+                        `<div style="margin:2px 0;">✅ ${m}</div>`
+                    ).join('');
+                }
+            }
+
+            // ==================== MILESTONE CHECK ====================
+            function checkMilestones() {
+                const subs = state.subscribers;
+                const milestones = [
+                    { threshold: 100, award: '100 Subscribers', badge: null },
+                    { threshold: 1000, award: '1,000 Subscribers', badge: null },
+                    { threshold: 10000, award: '10K Subscribers', badge: null },
+                    { threshold: 100000, award: '100K Subscribers', badge: 'Silver Play Button' },
+                    { threshold: 1000000, award: '1 Million Subscribers', badge: 'Gold Play Button' },
+                    { threshold: 10000000, award: '10 Million Subscribers', badge: 'Diamond Play Button' },
+                    { threshold: 50000000, award: '50 Million Subscribers', badge: 'Red Diamond Play Button' },
+                    { threshold: 100000000, award: '100 Million Subscribers', badge: 'Platinum Award' },
+                ];
+                for (const m of milestones) {
+                    if (subs >= m.threshold && !state.milestonesReached.includes(m.award)) {
+                        state.milestonesReached.push(m.award);
+                        if (m.badge && !state.awards.includes(m.badge)) {
+                            state.awards.push(m.badge);
+                        }
+                        showToast(`🎉 ${m.award}!`, 'gold');
+                        spawnConfetti(100);
+                        sfxMilestone();
+                        updateRoom();
+                        updateAwardsDisplay();
+                    }
+                }
+                updateMilestonesDisplay();
+            }
+
+            // ==================== EQUIPMENT EFFECTS ====================
+            function getEquipmentScore() {
+                let score = 0;
+                const eq = state.equipment;
+                if (eq.microphone === 'better') score += 5;
+                if (eq.microphone === 'pro') score += 12;
+                if (eq.camera === 'hd') score += 5;
+                if (eq.camera === '4k') score += 12;
+                if (eq.lighting === 'basic') score += 3;
+                if (eq.lighting === 'pro') score += 8;
+                if (eq.pc === 'gaming_pc') score += 8;
+                if (eq.pc === 'pro_pc') score += 15;
+                if (eq.editingSoftware === 'pro') score += 8;
+                if (eq.editor === 'freelancer') score += 6;
+                if (eq.editor === 'professional') score += 14;
+                if (eq.thumbnailDesigner === 'freelancer') score += 5;
+                if (eq.thumbnailDesigner === 'professional') score += 10;
+                if (eq.greenScreen) score += 4;
+                if (eq.internet === 'fast') score += 3;
+                if (eq.internet === 'fiber') score += 7;
+                if (eq.secondMonitor) score += 3;
+                if (eq.soundPanels) score += 4;
+                if (eq.streamingSetup) score += 5;
+                if (eq.office === 'office') score += 6;
+                if (eq.office === 'studio_space') score += 12;
+                if (eq.warehouseStudio) score += 20;
+                return score;
+            }
+
+            function getRoomLevelFromEquipment() {
+                const eq = state.equipment;
+                let lvl = 0;
+                if (eq.pc !== 'old_laptop' || eq.microphone !== 'bad') lvl = Math.max(lvl, 1);
+                if (eq.pc === 'gaming_pc' && eq.microphone !== 'bad' && eq.camera !== 'none') lvl = Math.max(lvl, 2);
+                if (eq.pc === 'pro_pc' && eq.camera !== 'none' && eq.lighting !== 'none' && eq.editor !== 'none')
+                    lvl = Math.max(lvl, 3);
+                if (eq.office === 'studio_space' && eq.greenScreen && eq.soundPanels) lvl = Math.max(lvl, 4);
+                if (eq.warehouseStudio) lvl = 5;
+                return lvl;
+            }
+
+            // ==================== VIDEO UPLOAD LOGIC ====================
+            function getAvailableTopics() {
+                const niche = state.niche;
+                const onNiche = nicheTopics[niche] || nicheTopics['Gaming'];
+                const allTopics = [...onNiche];
+                // Add some off-niche options
+                if (Math.random() < 0.3) {
+                    allTopics.push(offNicheTopics[Math.floor(Math.random() * offNicheTopics.length)]);
+                }
+                return allTopics;
+            }
+
+            function simulateUpload(topic, length, thumbnailQuality, editingQuality, uploadTime, effort, titleStyle) {
+                const eqScore = getEquipmentScore();
+                const isOnNiche = (nicheTopics[state.niche] || []).includes(topic) ||
+                    (nicheTopics[state.niche] || []).some(t => topic.toLowerCase().includes(t.toLowerCase()));
+
+                let baseViews = 50 + Math.random() * 200;
+                let viralChance = 0.02;
+                let flopChance = 0.15;
+
+                // Niche match
+                if (isOnNiche) {
+                    baseViews *= 2.5;
+                    viralChance += 0.05;
+                    flopChance -= 0.08;
+                } else {
+                    baseViews *= 0.3;
+                    viralChance = 0;
+                    flopChance += 0.35;
+                    state.audienceHappiness -= 8 + Math.random() * 10;
+                }
+
+                // Equipment
+                baseViews *= (1 + eqScore / 40);
+
+                // Thumbnail
+                if (thumbnailQuality === 'high') baseViews *= 1.6;
+                if (thumbnailQuality === 'low') baseViews *= 0.7;
+
+                // Editing
+                if (editingQuality === 'high') baseViews *= 1.5;
+                if (editingQuality === 'low') baseViews *= 0.75;
+
+                // Effort
+                if (effort === 'high') { baseViews *= 1.4;
+                    viralChance += 0.03; }
+                if (effort === 'low') { baseViews *= 0.5;
+                    flopChance += 0.2; }
+
+                // Upload time bonus
+                if (uploadTime === 'peak') baseViews *= 1.2;
+
+                // Title style
+                if (titleStyle === 'clickbait') { baseViews *= 1.3;
+                    state.audienceHappiness -= 3; }
+                if (titleStyle === 'boring') baseViews *= 0.8;
+
+                // Algorithm score influence
+                baseViews *= (0.5 + state.algorithmScore / 80);
+
+                // Subscriber base bonus
+                baseViews += state.subscribers * (0.02 + Math.random() * 0.08);
+
+                // Random variance
+                baseViews *= (0.4 + Math.random() * 1.6);
+
+                // Viral check
+                let isViral = false;
+                if (Math.random() < viralChance) {
+                    baseViews *= 5 + Math.random() * 20;
+                    isViral = true;
+                }
+
+                // Flop check
+                let isFlop = false;
+                if (Math.random() < flopChance && !isViral) {
+                    baseViews *= 0.1 + Math.random() * 0.3;
+                    isFlop = true;
+                }
+
+                const views = Math.max(10, Math.floor(baseViews));
+                const ctr = clamp(2 + Math.random() * 12 + (isViral ? 10 : 0) - (isFlop ? 5 : 0), 0.5, 25);
+                const watchTimePerView = 0.3 + Math.random() * 0.7;
+                const totalWatchTime = views * watchTimePerView;
+                const likes = Math.floor(views * (0.03 + Math.random() * 0.08));
+                const dislikes = Math.floor(views * (0.002 + Math.random() * 0.015));
+                const comments = Math.floor(views * (0.005 + Math.random() * 0.02));
+                const newSubs = Math.floor(views * (0.005 + Math.random() * 0.03) * (isOnNiche ? 1.5 : 0.4));
+                const revenue = views * (0.0005 + Math.random() * 0.004) + (state.sponsorReputation > 0 ? state
+                    .sponsorReputation * views * 0.0002 : 0);
+
+                return {
+                    views,
+                    ctr,
+                    totalWatchTime,
+                    likes,
+                    dislikes,
+                    comments,
+                    newSubs,
+                    revenue,
+                    isViral,
+                    isFlop,
+                    isOnNiche,
+                    topic,
+                };
+            }
+
+            function getRandomComments(count, sentiment = 'mixed') {
+                const pool = [...commentPool];
+                // Shuffle
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                const selected = pool.slice(0, Math.min(count, pool.length));
+                state.lastCommentSet = selected;
+                state.commentIndexOffset = (state.commentIndexOffset + count) % commentPool.length;
+                return selected;
+            }
+
+            function processUpload(topic, length, thumbnailQuality, editingQuality, uploadTime, effort, titleStyle) {
+                initAudio();
+                const result = simulateUpload(topic, length, thumbnailQuality, editingQuality, uploadTime, effort,
+                    titleStyle);
+
+                state.totalViews += result.views;
+                state.watchTime += result.totalWatchTime;
+                state.likes += result.likes;
+                state.dislikes += result.dislikes;
+                state.subscribers += result.newSubs;
+                state.money += result.revenue;
+                state.uploadCount++;
+                state.lastUploadDay = state.currentDay;
+                state.uploadConsistency = Math.min(100, state.uploadConsistency + 5);
+                state.algorithmScore = clamp(state.algorithmScore + (result.isViral ? 15 : result.isFlop ? -8 : 2), 0,
+                100);
+                state.audienceHappiness = clamp(state.audienceHappiness + (result.isOnNiche ? 3 : -8) + (result.isViral ?
+                    10 : 0) - (result.isFlop ? 5 : 0), 5, 100);
+                state.viralEventCooldown = Math.max(0, state.viralEventCooldown - 1);
+
+                // Random events
+                checkRandomEvents(result);
+
+                // Update room
+                const newRoomLevel = getRoomLevelFromEquipment();
+                if (newRoomLevel !== state.roomLevel) {
+                    state.roomLevel = newRoomLevel;
+                    updateRoom();
+                    showToast(`🏠 Room upgraded! New environment unlocked.`, 'success');
+                }
+
+                // Check milestones
+                checkMilestones();
+
+                // Update displays
+                updateStatsDisplay();
+                updateAwardsDisplay();
+                updateMilestonesDisplay();
+
+                // Display comments
+                const commentCount = Math.min(8, result.comments);
+                const commentList = getRandomComments(commentCount, result.isFlop ? 'negative' : 'mixed');
+                displayComments(commentList);
+
+                // Update last video info
+                $('last-video-info').innerHTML = `
+              <strong>${topic}</strong><br>
+              Views: ${formatNumber(result.views)}<br>
+              Likes: ${formatNumber(result.likes)} | CTR: ${result.ctr.toFixed(1)}%<br>
+              ${result.isViral ? '🔥 VIRAL!' : result.isFlop ? '💔 Flopped' : '📈 Normal'}
+            `;
+
+                // Effects
+                if (result.isViral) {
+                    spawnConfetti(120);
+                    sfxMilestone();
+                    showToast('🔥 YOUR VIDEO WENT VIRAL!', 'gold');
+                } else if (result.isFlop) {
+                    sfxFail();
+                    showToast('😔 This one didn\'t land...', 'error');
+                } else {
+                    sfxSuccess();
+                    if (result.revenue > 10) sfxCash();
+                }
+
+                // Sponsor reputation grows slowly
+                if (state.subscribers > 100) {
+                    state.sponsorReputation = Math.min(100, state.sponsorReputation + 0.5 + Math.random());
+                }
+
+                return result;
+            }
+
+            function displayComments(comments) {
+                const container = $('comments-display');
+                container.innerHTML = comments.map(c => {
+                    let cls = 'comment-item';
+                    if (c.type === 'troll') cls += ' troll';
+                    if (c.type === 'positive') cls += ' positive';
+                    return `<div class="${cls}">${c.text}</div>`;
+                }).join('');
+            }
+
+            function checkRandomEvents(result) {
+                // Viral events
+                if (state.viralEventCooldown <= 0 && Math.random() < 0.06 && state.subscribers > 50) {
+                    const events = [
+                        'A clip from your video is trending! +20% algorithm boost',
+                        'Featured on the homepage! Extra views incoming.',
+                        'A big creator reacted to your content!',
+                        'Someone gave you a shoutout on social media!',
+                        'Your short went viral on another platform!',
+                        'The algorithm is boosting your channel!',
+                        'An old video suddenly exploded with views!',
+                    ];
+                    const evt = events[Math.floor(Math.random() * events.length)];
+                    state.algorithmScore = clamp(state.algorithmScore + 15, 0, 100);
+                    state.subscribers += Math.floor(state.subscribers * (0.03 + Math.random() * 0.08));
+                    state.viralEventCooldown = 5;
+                    showToast('🌟 ' + evt, 'success');
+                    spawnConfetti(60);
+                    sfxSuccess();
+                }
+
+                // Bad events
+                if (Math.random() < 0.05 && state.subscribers > 100) {
+                    const badEvents = [
+                        { msg: '⚠️ Copyright claim on your video! Revenue reduced.', effect: () => { state.money = Math
+                                .max(0, state.money - state.money * 0.15);
+                            state.algorithmScore -= 8; } },
+                        { msg: '📉 Algorithm changed. Visibility dropped.', effect: () => { state.algorithmScore -=
+                                12; } },
+                        { msg: '😞 Trending topic died. Some content feels dated.', effect: () => { state
+                                .audienceHappiness -= 8; } },
+                        { msg: '💻 Your PC crashed during editing! Lost some work.', effect: () => { state
+                                .uploadConsistency -= 15; } },
+                        { msg: '🔥 You\'re feeling burnout. Audience noticed.', effect: () => { state
+                                .audienceHappiness -= 10;
+                            state.algorithmScore -= 5; } },
+                    ];
+                    const bad = badEvents[Math.floor(Math.random() * badEvents.length)];
+                    bad.effect();
+                    showToast(bad.msg, 'error');
+                    sfxFail();
+                }
+
+                // Sponsor event
+                if (state.sponsorReputation > 15 && Math.random() < 0.08 && !state.activeSponsor && state.subscribers >
+                    500) {
+                    generateSponsorOffer();
+                }
+            }
+
+            // ==================== SPONSORS ====================
+            function generateSponsorOffer() {
+                const tiers = [
+                    { name: 'Local Startup', tier: 'bronze', pay: 200 + Math.random() * 800, repReq: 10,
+                        trustImpact: 1 },
+                    { name: 'Online Retailer', tier: 'silver', pay: 800 + Math.random() * 2000, repReq: 25,
+                        trustImpact: -2 },
+                    { name: 'Tech Brand', tier: 'gold', pay: 2000 + Math.random() * 6000, repReq: 40,
+                    trustImpact: -3 },
+                    { name: 'Major Corporation', tier: 'diamond', pay: 8000 + Math.random() * 20000, repReq: 60,
+                        trustImpact: -6 },
+                ];
+                const available = tiers.filter(t => state.sponsorReputation >= t.repReq);
+                if (available.length === 0) return;
+                const offer = available[Math.floor(Math.random() * available.length)];
+                const sponsorship = {
+                    id: Date.now(),
+                    name: offer.name,
+                    tier: offer.tier,
+                    pay: Math.floor(offer.pay),
+                    trustImpact: offer.trustImpact,
+                    duration: 3 + Math.floor(Math.random() * 7),
+                    accepted: false,
+                };
+                state.sponsorships.push(sponsorship);
+                if (state.sponsorships.length > 10) state.sponsorships.shift();
+                showToast(`🤝 New sponsor offer: ${offer.name} - ${formatMoney(sponsorship.pay)}`, 'gold');
+            }
+
+            function acceptSponsor(id) {
+                const sponsor = state.sponsorships.find(s => s.id === id);
+                if (!sponsor || sponsor.accepted) return;
+                sponsor.accepted = true;
+                state.activeSponsor = sponsor;
+                state.money += sponsor.pay;
+                state.sponsorReputation += 5;
+                state.audienceHappiness += sponsor.trustImpact;
+                showToast(`✅ Accepted ${sponsor.name}! ${formatMoney(sponsor.pay)} earned.`, 'success');
+                sfxCash();
+                updateStatsDisplay();
+            }
+
+            function rejectSponsor(id) {
+                const sponsor = state.sponsorships.find(s => s.id === id);
+                if (!sponsor) return;
+                state.sponsorships = state.sponsorships.filter(s => s.id !== id);
+                state.sponsorReputation = Math.max(0, state.sponsorReputation - 2);
+                showToast(`❌ Rejected ${sponsor.name}.`, 'error');
+            }
+
+            // ==================== STREAMING ====================
+            function simulateStream() {
+                initAudio();
+                if (state.subscribers < 100) {
+                    showToast('Need at least 100 subscribers to go live.', 'error');
+                    return;
+                }
+                if (!state.equipment.streamingSetup && state.subscribers < 1000) {
+                    showToast('You need a streaming setup for better results. Visit the shop!', 'error');
+                }
+                const baseViewers = Math.floor(state.subscribers * (0.01 + Math.random() * 0.05));
+                const streamQuality = state.equipment.streamingSetup ? 2 : 1;
+                const viewers = baseViewers * streamQuality;
+                const donations = viewers * (0.1 + Math.random() * 0.5);
+                const newSubs = Math.floor(viewers * (0.02 + Math.random() * 0.06));
+                const revenue = donations + viewers * 0.02;
+
+                state.money += revenue;
+                state.subscribers += newSubs;
+                state.totalViews += viewers * 3;
+                state.algorithmScore = clamp(state.algorithmScore + 3, 0, 100);
+                state.audienceHappiness = clamp(state.audienceHappiness + 4, 0, 100);
+
+                showToast(
+                    `🔴 Stream ended! ${formatNumber(viewers)} viewers | ${formatNumber(newSubs)} new subs | ${formatMoney(revenue)} earned`,
+                    'success');
+                spawnConfetti(40);
+                sfxSuccess();
+                updateStatsDisplay();
+                checkMilestones();
+            }
+
+            // ==================== LEADERBOARD ====================
+            function getLeaderboard() {
+                const fictionalCreators = [
+                    { name: 'MegaStarGamer', subs: 95000000, niche: 'Gaming' },
+                    { name: 'TechWizard', subs: 82000000, niche: 'Technology' },
+                    { name: 'LaughFactory', subs: 78000000, niche: 'Comedy' },
+                    { name: 'ScienceDaily', subs: 65000000, niche: 'Science' },
+                    { name: 'MusicVibes', subs: 61000000, niche: 'Music' },
+                    { name: 'MovieMaster', subs: 55000000, niche: 'Movies' },
+                    { name: 'ArtisticSoul', subs: 48000000, niche: 'Art' },
+                    { name: 'StoryTime', subs: 42000000, niche: 'Storytelling' },
+                    { name: 'ChefExtraordinaire', subs: 38000000, niche: 'Cooking' },
+                    { name: 'TravelBug', subs: 35000000, niche: 'Travel' },
+                    { name: 'CodeGenius', subs: 31000000, niche: 'Programming' },
+                    { name: 'SportsFanatic', subs: 28000000, niche: 'Sports' },
+                    { name: 'HorrorKing', subs: 25000000, niche: 'Horror' },
+                    { name: 'ReviewQueen', subs: 22000000, niche: 'Reviews' },
+                    { name: 'MemeLord', subs: 19000000, niche: 'Memes' },
+                    { name: 'AnimationPro', subs: 16000000, niche: 'Animation' },
+                    { name: 'LifestyleGuru', subs: 14000000, niche: 'Lifestyle' },
+                    { name: 'CarEnthusiast', subs: 12000000, niche: 'Cars' },
+                    { name: 'NewsWire', subs: 10000000, niche: 'News' },
+                    { name: 'EduMaster', subs: 8500000, niche: 'Education' },
+                ];
+                const all = [...fictionalCreators];
+                if (state.channelName && state.subscribers > 0) {
+                    all.push({ name: state.channelName + ' (YOU)', subs: state.subscribers, niche: state.niche,
+                        isPlayer: true });
+                }
+                all.sort((a, b) => b.subs - a.subs);
+                return all.slice(0, 25);
+            }
+
+            // ==================== MODALS ====================
+            function showModal(title, contentHtml, onClose) {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = `
+              <div class="modal">
+                <h2>${title}</h2>
+                ${contentHtml}
+                <div style="text-align:right;margin-top:16px;">
+                  <button class="btn btn-secondary btn-sm close-modal-btn">Close</button>
+                </div>
+              </div>
+            `;
+                document.body.appendChild(overlay);
+                overlay.querySelector('.close-modal-btn').addEventListener('click', () => {
+                    overlay.remove();
+                    if (onClose) onClose();
+                });
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) { overlay.remove(); if (onClose) onClose(); }
+                });
+                return overlay;
+            }
+
+            function showUploadModal() {
+                initAudio();
+                const topics = getAvailableTopics();
+                const topicOptions = topics.map(t => `<option value="${t}">${t}</option>`).join('');
+                const content = `
+              <div class="form-group">
+                <label>Video Topic</label>
+                <select id="upload-topic">${topicOptions}</select>
+              </div>
+              <div class="form-group">
+                <label>Video Length</label>
+                <select id="upload-length">
+                  <option value="short">Short (under 3 min)</option>
+                  <option value="medium" selected>Medium (8-15 min)</option>
+                  <option value="long">Long (20+ min)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Thumbnail Quality</label>
+                <select id="upload-thumbnail">
+                  <option value="low">Quick & Basic</option>
+                  <option value="medium" selected>Decent</option>
+                  <option value="high">Professional</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Editing Quality</label>
+                <select id="upload-editing">
+                  <option value="low">Minimal</option>
+                  <option value="medium" selected>Good</option>
+                  <option value="high">Excellent</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Upload Time</label>
+                <select id="upload-time">
+                  <option value="off-peak">Off-Peak</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="peak">Peak Hours</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Effort Level</label>
+                <select id="upload-effort">
+                  <option value="low">Quick & Easy</option>
+                  <option value="medium" selected>Solid Effort</option>
+                  <option value="high">Maximum Effort</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Title Style</label>
+                <select id="upload-title">
+                  <option value="normal" selected>Normal</option>
+                  <option value="clickbait">Clickbait</option>
+                  <option value="boring">Straightforward</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="confirm-upload-btn" style="width:100%;margin-top:8px;">Upload Video</button>
+            `;
+                const modal = showModal('📤 Create & Upload Video', content);
+                modal.querySelector('#confirm-upload-btn').addEventListener('click', () => {
+                    const topic = modal.querySelector('#upload-topic').value;
+                    const length = modal.querySelector('#upload-length').value;
+                    const thumbnail = modal.querySelector('#upload-thumbnail').value;
+                    const editing = modal.querySelector('#upload-editing').value;
+                    const uploadTime = modal.querySelector('#upload-time').value;
+                    const effort = modal.querySelector('#upload-effort').value;
+                    const title = modal.querySelector('#upload-title').value;
+                    modal.remove();
+                    processUpload(topic, length, thumbnail, editing, uploadTime, effort, title);
+                    state.currentDay++;
+                    saveGame();
+                });
+            }
+
+            function showShopModal() {
+                initAudio();
+                const eq = state.equipment;
+                const items = [
+                    { name: 'Better Microphone', key: 'microphone', cost: 150, current: eq.microphone,
+                        upgrades: ['bad', 'better', 'pro'], labels: ['Bad 🎤', 'Better 🎙️', 'Pro 🎙️'] },
+                    { name: 'Camera', key: 'camera', cost: 300, current: eq.camera, upgrades: ['none', 'hd', '4k'],
+                        labels: ['None', 'HD 📷', '4K 📷'] },
+                    { name: 'Lighting', key: 'lighting', cost: 200, current: eq.lighting, upgrades: ['none', 'basic',
+                            'pro'
+                        ], labels: ['None', 'Basic 💡', 'Pro 💡'] },
+                    { name: 'Computer', key: 'pc', cost: 800, current: eq.pc, upgrades: ['old_laptop', 'gaming_pc',
+                            'pro_pc'
+                        ], labels: ['Old Laptop 💻', 'Gaming PC 🖥️', 'Pro PC 🖥️'] },
+                    { name: 'Editing Software', key: 'editingSoftware', cost: 250, current: eq.editingSoftware,
+                        upgrades: ['basic', 'pro'], labels: ['Basic ✂️', 'Pro ✂️'] },
+                    { name: 'Editor', key: 'editor', cost: 500, current: eq.editor, upgrades: ['none', 'freelancer',
+                            'professional'
+                        ], labels: ['None', 'Freelancer 👤', 'Professional 👤'] },
+                    { name: 'Thumbnail Designer', key: 'thumbnailDesigner', cost: 350, current: eq.thumbnailDesigner,
+                        upgrades: ['none', 'freelancer', 'professional'], labels: ['None', 'Freelancer 🎨',
+                            'Pro 🎨'] },
+                    { name: 'Green Screen', key: 'greenScreen', cost: 180, current: eq.greenScreen ? 'yes' : 'no',
+                        upgrades: ['no', 'yes'], labels: ['No', 'Yes 🟢'], isBool: true },
+                    { name: 'Better Internet', key: 'internet', cost: 100, current: eq.internet, upgrades: ['slow',
+                            'fast', 'fiber'
+                        ], labels: ['Slow 🌐', 'Fast 🌐', 'Fiber 🌐'] },
+                    { name: 'Second Monitor', key: 'secondMonitor', cost: 200, current: eq.secondMonitor ? 'yes' :
+                        'no', upgrades: ['no', 'yes'], labels: ['No', 'Yes 🖥️'], isBool: true },
+                    { name: 'Sound Panels', key: 'soundPanels', cost: 300, current: eq.soundPanels ? 'yes' : 'no',
+                        upgrades: ['no', 'yes'], labels: ['No', 'Yes 🔇'], isBool: true },
+                    { name: 'Streaming Setup', key: 'streamingSetup', cost: 400, current: eq.streamingSetup ? 'yes' :
+                            'no',
+                        upgrades: ['no', 'yes'], labels: ['No', 'Yes 🔴'], isBool: true },
+                    { name: 'Office Upgrade', key: 'office', cost: 2000, current: eq.office, upgrades: ['none',
+                            'office', 'studio_space'
+                        ], labels: ['None 🏠', 'Office 🏢', 'Studio Space 🏗️'] },
+                    { name: 'Warehouse Studio', key: 'warehouseStudio', cost: 15000, current: eq.warehouseStudio ?
+                            'yes' : 'no', upgrades: ['no', 'yes'], labels: ['No', 'Yes 🏭'], isBool: true },
+                ];
+
+                const itemsHtml = items.map(item => {
+                    const currentIdx = item.upgrades.indexOf(item.current);
+                    const nextIdx = currentIdx + 1;
+                    const canUpgrade = nextIdx < item.upgrades.length;
+                    const nextLabel = canUpgrade ? item.labels[nextIdx] : 'MAX';
+                    const cost = item.cost * (nextIdx + 1);
+                    const canAfford = state.money >= cost;
+                    return `
+                <div class="sponsor-card" style="justify-content:space-between;">
+                  <div>
+                    <strong>${item.name}</strong><br>
+                    <small style="color:var(--text2);">Current: ${item.labels[currentIdx]}</small>
+                  </div>
+                  <div style="text-align:right;">
+                    ${canUpgrade ? `<span style="font-weight:700;">${formatMoney(cost)}</span><br>
+                    <button class="btn btn-sm ${canAfford?'btn-primary':'btn-secondary'}" 
+                      data-key="${item.key}" data-cost="${cost}" data-next="${item.upgrades[nextIdx]}"
+                      ${canAfford?'':'disabled'} style="margin-top:4px;">
+                      Upgrade to ${nextLabel}
+                    </button>` : '<span class="badge gold-badge">MAXED</span>'}
+                  </div>
+                </div>
+              `;
+                }).join('');
+
+                const modal = showModal('🛒 Equipment Shop', itemsHtml + '<p style="font-size:0.75rem;color:var(--text2);margin-top:8px;">Upgrading equipment improves video quality and unlocks room changes.</p>');
+                modal.querySelectorAll('button[data-key]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const key = btn.dataset.key;
+                        const cost = parseInt(btn.dataset.cost);
+                        const nextVal = btn.dataset.next;
+                        if (state.money >= cost) {
+                            state.money -= cost;
+                            if (state.equipment[key] === 'yes' || state.equipment[key] === 'no' ||
+                                key === 'greenScreen' || key === 'secondMonitor' || key ===
+                                'soundPanels' || key === 'streamingSetup' || key === 'warehouseStudio') {
+                                state.equipment[key] = nextVal;
+                            } else {
+                                state.equipment[key] = nextVal;
+                            }
+                            state.equipmentLevel = getEquipmentScore();
+                            const newRoomLevel = getRoomLevelFromEquipment();
+                            if (newRoomLevel !== state.roomLevel) {
+                                state.roomLevel = newRoomLevel;
+                                updateRoom();
+                                showToast('🏠 Room environment upgraded!', 'success');
+                            }
+                            updateRoom();
+                            updateStatsDisplay();
+                            sfxCash();
+                            showToast(`✅ Purchased upgrade!`, 'success');
+                            modal.remove();
+                            showShopModal(); // Refresh
+                        }
+                    });
+                });
+            }
+
+            function showSponsorsModal() {
+                initAudio();
+                let content = '<div style="max-height:300px;overflow-y:auto;">';
+                if (state.sponsorships.length === 0) {
+                    content += '<p style="color:var(--text2);">No sponsor offers yet. Keep growing!</p>';
+                } else {
+                    state.sponsorships.forEach(s => {
+                        const tierClass = 'sponsor-tier-' + s.tier;
+                        content += `
+                  <div class="sponsor-card ${tierClass}">
+                    <div>
+                      <strong>${s.name}</strong> <span class="badge">${s.tier.toUpperCase()}</span><br>
+                      <small>${formatMoney(s.pay)} | Trust impact: ${s.trustImpact>0?'+':''}${s.trustImpact}</small>
+                    </div>
+                    <div>
+                      ${s.accepted ? '<span class="badge gold-badge">Accepted</span>' : `
+                        <button class="btn btn-sm btn-primary accept-sponsor" data-id="${s.id}">Accept</button>
+                        <button class="btn btn-sm btn-danger reject-sponsor" data-id="${s.id}" style="margin-left:4px;">Reject</button>
+                      `}
+                    </div>
+                  </div>
+                `;
+                    });
+                }
+                content += '</div>';
+                content +=
+                    '<p style="font-size:0.75rem;color:var(--text2);margin-top:8px;">Sponsor Reputation: ' + Math.floor(
+                        state.sponsorReputation) + '/100</p>';
+
+                const modal = showModal('🤝 Sponsors', content);
+                modal.querySelectorAll('.accept-sponsor').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        acceptSponsor(parseInt(btn.dataset.id));
+                        modal.remove();
+                        showSponsorsModal();
+                    });
+                });
+                modal.querySelectorAll('.reject-sponsor').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        rejectSponsor(parseInt(btn.dataset.id));
+                        modal.remove();
+                        showSponsorsModal();
+                    });
+                });
+            }
+
+            function showLeaderboardModal() {
+                const lb = getLeaderboard();
+                let content = '<div style="max-height:400px;overflow-y:auto;">';
+                lb.forEach((creator, i) => {
+                    const rank = i + 1;
+                    const rankClass = rank <= 3 ? ' top3' : '';
+                    const isPlayer = creator.isPlayer;
+                    content += `
+                <div class="leaderboard-row${isPlayer?' player-row':''}">
+                  <span class="leaderboard-rank${rankClass}">#${rank}</span>
+                  <span style="flex:1;font-weight:${isPlayer?'800':'500'};">${creator.name}</span>
+                  <span style="color:var(--text2);font-size:0.8rem;">${creator.niche}</span>
+                  <span style="font-weight:700;margin-left:8px;">${formatNumber(creator.subs)} subs</span>
+                </div>
+              `;
+                });
+                content += '</div>';
+                showModal('🏆 Creator Leaderboard', content);
+            }
+
+            function showStreamModal() {
+                initAudio();
+                if (state.subscribers < 100) {
+                    showToast('Need at least 100 subscribers to go live.', 'error');
+                    return;
+                }
+                const content = `
+              <p>Go live to your audience!</p>
+              <p style="color:var(--text2);">Estimated viewers: ~${formatNumber(Math.floor(state.subscribers * (0.01 + Math.random() * 0.05)))}</p>
+              <p style="color:var(--text2);">Streaming setup: ${state.equipment.streamingSetup ? '✅ Ready' : '⚠️ Basic'}</p>
+              <button class="btn btn-primary" id="start-stream-btn" style="width:100%;margin-top:12px;">🔴 Start Streaming</button>
+            `;
+                const modal = showModal('🔴 Go Live', content);
+                modal.querySelector('#start-stream-btn').addEventListener('click', () => {
+                    modal.remove();
+                    simulateStream();
+                    saveGame();
+                });
+            }
+
+            // ==================== SAVE / LOAD ====================
+            function saveGame() {
+                try {
+                    localStorage.setItem('creatorSim_save', JSON.stringify(state));
+                    showToast('💾 Game saved!', 'success');
+                } catch (e) {
+                    showToast('Failed to save.', 'error');
+                }
+            }
+
+            function loadGame() {
+                try {
+                    const data = localStorage.getItem('creatorSim_save');
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        // Merge with defaults to handle new fields
+                        state = { ...defaultState(), ...parsed };
+                        state.equipment = { ...defaultState().equipment, ...(parsed.equipment || {}) };
+                        return true;
+                    }
+                } catch (e) { /* corrupted save */ }
+                return false;
+            }
+
+            function resetGame() {
+                if (confirm('Reset all progress? This cannot be undone.')) {
+                    state = defaultState();
+                    localStorage.removeItem('creatorSim_save');
+                    updateAllUI();
+                    showToast('🔄 Game reset.', 'error');
+                    switchToCreationScreen();
+                }
+            }
+
+            // ==================== UI UPDATE ====================
+            function updateAllUI() {
+                updateStatsDisplay();
+                updateRoom();
+                updateAwardsDisplay();
+                updateMilestonesDisplay();
+                $('last-video-info').innerHTML = state.uploadCount === 0 ? 'No videos yet' :
+                    `${state.uploadCount} videos uploaded`;
+                $('comments-display').innerHTML = state.lastCommentSet.length > 0 ?
+                    state.lastCommentSet.map(c => `<div class="comment-item ${c.type==='troll'?'troll':c.type==='positive'?'positive':''}">${c.text}</div>`)
+                    .join('') :
+                    '<span style="color:var(--text2);">Upload a video to see comments</span>';
+                $('channel-name-input').value = state.channelName;
+                if (state.niche && state.channelName) {
+                    document.querySelectorAll('.genre-btn').forEach(b => {
+                        b.classList.toggle('selected', b.dataset.genre === state.niche);
+                    });
+                }
+            }
+
+            function switchToGameScreen() {
+                $('creation-screen').classList.remove('active');
+                $('game-screen').classList.add('active');
+                updateAllUI();
+            }
+
+            function switchToCreationScreen() {
+                $('game-screen').classList.remove('active');
+                $('creation-screen').classList.add('active');
+            }
+
+            // ==================== EVENT HANDLERS ====================
+            function initGenreGrid() {
+                const grid = $('genre-grid');
+                grid.innerHTML = genres.map(g =>
+                    `<button class="genre-btn" data-genre="${g}">${g}</button>`
+                ).join('');
+                grid.querySelectorAll('.genre-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        initAudio();
+                        sfxClick();
+                        grid.querySelectorAll('.genre-btn').forEach(b => b.classList.remove(
+                            'selected'));
+                        btn.classList.add('selected');
+                        state.niche = btn.dataset.genre;
+                    });
+                });
+            }
+
+            $('start-btn').addEventListener('click', () => {
+                initAudio();
+                sfxClick();
+                const name = $('channel-name-input').value.trim();
+                if (!name) { showToast('Enter a channel name!', 'error'); return; }
+                if (!state.niche) { showToast('Choose a niche!', 'error'); return; }
+                state.channelName = name;
+                switchToGameScreen();
+                saveGame();
+                showToast(`Welcome, ${name}! Start uploading to grow your channel.`, 'success');
+                spawnConfetti(30);
+            });
+
+            $('upload-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                showUploadModal(); });
+            $('shop-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                showShopModal(); });
+            $('sponsors-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                showSponsorsModal(); });
+            $('stream-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                showStreamModal(); });
+            $('leaderboard-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                showLeaderboardModal(); });
+            $('save-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                saveGame(); });
+            $('reset-btn').addEventListener('click', () => { initAudio();
+                sfxClick();
+                resetGame(); });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'u' && e.ctrlKey) { e.preventDefault();
+                    showUploadModal(); }
+                if (e.key === 's' && e.ctrlKey) { e.preventDefault();
+                    saveGame(); }
+            });
+
+            // ==================== INIT ====================
+            function init() {
+                initGenreGrid();
+                const loaded = loadGame();
+                if (loaded && state.channelName && state.niche && state.uploadCount >= 0) {
+                    switchToGameScreen();
+                    showToast(`Welcome back, ${state.channelName}!`, 'success');
+                } else {
+                    state = defaultState();
+                    switchToCreationScreen();
+                }
+                updateAllUI();
+            }
+
+            // Auto-save every 60 seconds
+            setInterval(() => {
+                if (state.channelName && state.niche && $('game-screen').classList.contains('active')) {
+                    saveGame();
+                }
+            }, 60000);
+
+            // Passive income / decay
+            setInterval(() => {
+                if ($('game-screen').classList.contains('active') && state.subscribers > 0) {
+                    // Slight passive growth
+                    if (state.uploadConsistency > 30 && state.audienceHappiness > 40) {
+                        const passiveSubs = Math.floor(state.subscribers * 0.0001);
+                        state.subscribers += passiveSubs;
+                        state.totalViews += passiveSubs * 5;
+                    }
+                    // Decay if inactive
+                    if (state.currentDay - state.lastUploadDay > 7 && state.lastUploadDay >= 0) {
+                        state.audienceHappiness -= 1;
+                        state.algorithmScore -= 0.5;
+                        state.uploadConsistency -= 2;
+                    }
+                    state.audienceHappiness = clamp(state.audienceHappiness, 5, 100);
+                    state.algorithmScore = clamp(state.algorithmScore, 0, 100);
+                    state.uploadConsistency = clamp(state.uploadConsistency, 0, 100);
+                    updateStatsDisplay();
+                    checkMilestones();
+                }
+            }, 15000);
+
+            init();
+            console.log('🎬 Creator Sim ready!');
+            console.log('📤 Click "Upload Video" to start your journey.');
+            console.log('💡 Tips: Stay on-niche, upgrade equipment, and watch for viral moments!');
+        })();
+    </script>
+</body>
+</html>
